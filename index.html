@@ -79,6 +79,7 @@ h1{margin:0;font:italic 400 clamp(36px,5vw,52px)/1.05 var(--display);letter-spac
 .tbar b{position:absolute;top:-7px;left:-4px;width:12px;height:11px;border-radius:2px;background:#22262c;color:#f1f1f1;font:700 8px/11px var(--ui);text-align:center}
 .well{position:absolute;left:50px;top:418px;width:620px;height:252px;z-index:1}
 .key{position:absolute;width:40px;height:36px;padding:0;border:0;border-radius:50%;background:radial-gradient(ellipse at 38% 26%,#fffef6,#f0e7cd 50%,#cdbf9b 100%);box-shadow:inset 0 -2px 3px rgba(110,90,50,.35),0 0 0 3px #e6eaed,0 0 0 4.5px #7c848b,0 6px 0 3px #4a4f55,0 10px 8px 3px rgba(0,0,0,.55);font:700 14px/36px var(--ui);color:#151515;text-align:center;cursor:pointer;user-select:none;-webkit-user-select:none;transition:transform 45ms,box-shadow 45ms}
+.key::after{content:"";position:absolute;inset:-5px -5px -6px -5px;border-radius:inherit}
 .key.wide{border-radius:18px;font-size:10px;letter-spacing:.12em}
 .key.space{height:28px;border-radius:14px;line-height:28px}
 .key.down{transform:translateY(5px);box-shadow:inset 0 -2px 3px rgba(110,90,50,.35),0 0 0 3px #e6eaed,0 0 0 4.5px #7c848b,0 1px 0 3px #4a4f55,0 3px 4px 3px rgba(0,0,0,.55)}
@@ -86,7 +87,7 @@ h1{margin:0;font:italic 400 clamp(36px,5vw,52px)/1.05 var(--display);letter-spac
 @keyframes shake{20%{transform:translateX(-4px)}40%{transform:translateX(4px)}60%{transform:translateX(-3px)}80%{transform:translateX(2px)}}
 .readout{display:flex;flex-wrap:wrap;justify-content:space-between;gap:4px 20px;max-width:1000px;margin:6px auto 0;font:400 14px var(--type);color:var(--ink-soft);font-variant-numeric:tabular-nums}
 .kbdprompt{position:absolute;left:50%;top:10px;transform:translateX(-50%);z-index:5;background:var(--ink);color:#fff;padding:9px 16px;border-radius:4px;font:600 13px var(--ui);letter-spacing:.03em;white-space:nowrap;pointer-events:none}
-#cap{position:fixed;left:-300px;top:0;width:10px;height:10px;opacity:0}
+#cap{position:fixed;left:50%;bottom:48px;width:24px;height:24px;padding:0;border:0;opacity:.01;font-size:16px;pointer-events:none;resize:none;overflow:hidden;background:transparent;color:transparent;caret-color:transparent}
 
 /* ---------- notes screen ---------- */
 .desk{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:48px;align-items:start}
@@ -139,10 +140,10 @@ h1{margin:0;font:italic 400 clamp(36px,5vw,52px)/1.05 var(--display);letter-spac
 
 /* compact (phones): crop to the machine so the keys are bigger; knobs + lever stay fixed at the edges */
 .stageWrap.compact{overflow:hidden}
-.stage.compact > .knob.l,.stage.compact > .lever{left:234px}
-.stage.compact > .knob.r{left:822px}
-.stage.compact > .knoblabel.r{left:816px}
-.stage.compact > .knoblabel.l{display:block;left:228px}
+.stage.compact > .knob.l,.stage.compact > .lever{left:214px}
+.stage.compact > .knob.r{left:842px}
+.stage.compact > .knoblabel.r{left:836px}
+.stage.compact > .knoblabel.l{display:block;left:208px}
 .stage.compact > .knob,.stage.compact > .knoblabel,.stage.compact > .lever{z-index:7}
 .stage.compact > .knob.l{cursor:pointer}
 .stage.compact > .knob.l.on{box-shadow:inset 0 0 0 1.5px rgba(0,0,0,.16),0 0 0 3px var(--enamel),0 4px 5px rgba(0,0,0,.4)}
@@ -443,7 +444,7 @@ let scale = 1, rows = [[]], row = 0, col = 0, typed = 0, busy = false, returning
 let rowEls = [], cells = {};
 const sheetX = c => TP - LM - c*CW;
 
-const WX0 = 230, WW = 640;
+const WX0 = 200, WW = 700;
 let compact = false;
 function setCompact(on) {
   if (on === compact) return; compact = on;
@@ -455,19 +456,22 @@ function setCompact(on) {
 function fit() {
   const host = $('#viewType'); if (host.hidden) return;
   const w = host.clientWidth; if (!w) return;
-  setCompact(w < 700);
+  const coarse = window.matchMedia && matchMedia('(pointer:coarse)').matches;
+  setCompact(w < 820 || (coarse && w < 1100));
   const top = stageWrap.getBoundingClientRect().top + window.scrollY;
   const ro = document.querySelector('.readout');
   const availH = innerHeight - top - ro.offsetHeight - 26;
   if (compact) {
-    const s = Math.max(.3, w / WW);
+    const bleed = 16, G = 14, full = w + bleed * 2, s = Math.max(.3, (full - 2 * G) / WW), x0 = WX0 - G / s;
     scale = s;
-    stageWrap.style.width = w + 'px'; stageWrap.style.height = (655 * s) + 'px';
-    stage.style.transform = `translate(${-WX0*s}px,${-90*s}px) scale(${s})`;
+    stageWrap.style.marginInline = -bleed + 'px';
+    stageWrap.style.width = full + 'px'; stageWrap.style.height = (655 * s) + 'px';
+    stage.style.transform = `translate(${-x0*s}px,${-90*s}px) scale(${s})`;
     return;
   }
   const s = Math.max(.3, Math.min(w / STW, availH / 630));
   scale = s;
+  stageWrap.style.marginInline = '';
   stageWrap.style.width = (STW * s) + 'px'; stageWrap.style.height = (630 * s) + 'px';
   stage.style.transform = `translateY(${-90*s}px) scale(${s})`;
 }
@@ -535,7 +539,7 @@ function pressKey(el) { el.classList.add('down'); setTimeout(() => { if (!el._ho
 
 let hintT = 0;
 function hintText() { return compact ? 'Tap the keys, or turn the left knob to use your phone keyboard. Right knob ejects.' : 'Type on your keyboard or tap the keys. Turn the right knob to eject the page.'; }
-function focusCap() { if (compact && document.activeElement !== cap) return; try { cap.focus({ preventScroll: true }); } catch (e) {} }
+function focusCap() { if (compact && !kbdWanted) return; try { cap.focus({ preventScroll: true }); } catch (e) {} }
 function hint(msg, ms = 3200) {
   hintEl.textContent = msg; clearTimeout(hintT);
   if (ms) hintT = setTimeout(() => { hintEl.textContent = hintText(); }, ms);
@@ -704,14 +708,31 @@ cap.addEventListener('input', () => {
 });
 stageWrap.addEventListener('pointerdown', focusCap);
 const kbdKnob = $('#kbdknob'), kbdLabel = $('#kbdlabel');
-function kbdState() { const on = document.activeElement === cap; kbdKnob.classList.toggle('on', on); kbdLabel.textContent = on ? 'HIDE' : 'KEYS'; }
-cap.addEventListener('focus', kbdState); cap.addEventListener('blur', kbdState);
+let kbdWanted = false, vvBase = window.visualViewport ? visualViewport.height : 0;
+function kbdState() { kbdKnob.classList.toggle('on', kbdWanted); kbdLabel.textContent = kbdWanted ? 'HIDE' : 'KEYS'; }
+function openKbd() {
+  kbdWanted = true;
+  try { cap.blur(); cap.focus(); cap.click && cap.click(); cap.setSelectionRange(0, 0); } catch (e) {}
+  kbdState();
+}
+function closeKbd() { kbdWanted = false; try { cap.blur(); } catch (e) {} kbdState(); }
+/* user dismissed the OS keyboard (back gesture / keyboard's own button): keep the knob honest */
+if (window.visualViewport) visualViewport.addEventListener('resize', () => {
+  const h = visualViewport.height;
+  if (!kbdWanted) { if (h > vvBase) vvBase = h; return; }
+  if (h >= vvBase - 40 && Date.now() - kbdOpenedAt > 900 && Date.now() - knobT > 600) closeKbd();
+});
+let kbdOpenedAt = 0;
+cap.addEventListener('blur', () => { if (kbdWanted && Date.now() - kbdOpenedAt > 900 && Date.now() - knobT > 600) { kbdWanted = false; kbdState(); } });
+stageWrap.addEventListener('mousedown', e => { if (compact && kbdWanted && e.target !== kbdKnob && !kbdKnob.contains(e.target)) e.preventDefault(); });
+let knobT = 0;
+kbdKnob.addEventListener('pointerdown', e => { knobT = Date.now(); if (compact) e.stopPropagation(); });
+kbdKnob.addEventListener('mousedown', e => { if (compact) e.preventDefault(); });
 kbdKnob.addEventListener('click', () => {
   if (!compact) return;
   Snd.init();
   kbdKnob.querySelector('.ridges').animate([{ backgroundPosition: '0 0' }, { backgroundPosition: '0 -48px' }], { duration: 450, easing: 'ease-in-out' });
-  if (document.activeElement === cap) cap.blur(); else { try { cap.focus({ preventScroll: true }); } catch (e) {} }
-  kbdState();
+  if (kbdWanted) closeKbd(); else { kbdOpenedAt = Date.now(); openKbd(); }
 });
 $('#lever').addEventListener('click', () => { Snd.init(); doReturn(); });
 ejectBtn.addEventListener('click', () => { Snd.init(); ejectPage(); });
